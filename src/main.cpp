@@ -2,9 +2,9 @@
 
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 
+//vision sensor stuff
 pros::Vision front_vision_sensor(16);
 pros::Vision back_vision_sensor(15);
-
 
 pros::vision_signature_s_t ring_signature =
 front_vision_sensor.signature_from_utility(1, -205, 863, 329, 7521, 8655, 8088, 3.000, 0);
@@ -16,7 +16,7 @@ pros::vision_signature_s_t nuetral_mogus_signature =
 front_vision_sensor.signature_from_utility(1, 1455, 1783, 1619, -3579, -3329, -3454, 3.000, 0);
 
 
-
+//define motors
 pros::Motor front_left (8, MOTOR_GEARSET_18);
 pros::Motor front_right (9, MOTOR_GEARSET_18, true);
 
@@ -24,33 +24,29 @@ pros::Motor back_left (18, MOTOR_GEARSET_18);
 pros::Motor back_right (20, MOTOR_GEARSET_18, true);
 
 pros::Motor lift_motor (19, MOTOR_GEARSET_36);
-
 pros::Motor varuns_foot (10, MOTOR_GEARSET_36);
 
 pros::Motor ring_bow (15, MOTOR_GEARSET_36);
 
+// TODO: fix all this weird auton code CALVIN!!!!!!
+// TODO: Use PID controller for autonomous
 
-/*pros::ADIAnalogIn limit_switch1 (6);*/
-
+//define motor speed variables
 int right_front_output;
 int left_front_output;
 int right_back_output;
 int left_back_output;
 
+//define vision sensor variables
 pros::vision_object_s_t red_mobile_goals[2];
 pros::vision_object_s_t blue_mobile_goals[2];
 pros::vision_object_s_t nutral_mogii[3];
 
 bool complado = false;
-
 int goal_area = 1000;
-
 int speed;
-/*
-front_vision_sensor.read_by_sig(0, nuetral_mogus_signature.id, 2, nutral_mogii);
-front_vision_sensor.read_by_sig(0, red_mogus_signature.id, 2, red_mobile_goals);
-*/
 
+//go full speed on all motors
 void full (bool reversed = false) {
 	front_right = 127;
 	front_left = 127;
@@ -65,6 +61,7 @@ void full (bool reversed = false) {
 	}
 }
 
+//rotate on a point
 void rotateOnPoint (bool right = true) {
 	if (right) {
 		front_right = -127;
@@ -79,6 +76,7 @@ void rotateOnPoint (bool right = true) {
 	}
 }
 
+//stop all motors
 void stop () {
 	front_right = 0;
 	back_right = 0;
@@ -86,7 +84,7 @@ void stop () {
 	back_left = 0;
 }
 
-
+// TODO: Remove this if never used
 void RedLeft() {
 	while (true) {
 		front_vision_sensor.read_by_sig(0, nuetral_mogus_signature.id, 2, nutral_mogii);
@@ -176,15 +174,6 @@ void RedLeft() {
 		pros::delay(20);
 		}
 
-/*
-	while (limit_switch1.get_value() >= 15) {
-		if (speed <=127) {
-			speed += 50;
-		}
-		lift_motor = speed;
-		pros::delay(20);
-		}
-		*/
 		right_front_output = 0;
 		left_front_output = 0;
 		right_back_output = 0;
@@ -192,7 +181,7 @@ void RedLeft() {
 
 	}
 
-
+// TODO: Remove if never used
 void RedRightStart() {
 	int Position_lift = 0;
 
@@ -228,6 +217,7 @@ void RedRightStart() {
 
 }
 
+// TODO: Remove if never used
 void newLeft () {
 
 	int step_1_lift_down = 8000;
@@ -244,13 +234,6 @@ void newLeft () {
 	varuns_foot = 127;
 	pros::delay(300);
 	varuns_foot = 0;
-
-
-	/*
-	lift_motor = 127;
-	pros::delay(5000);
-	lift_motor = 0; */
-
 
 	/* 1st step */
 	lift_motor = 127;
@@ -269,57 +252,7 @@ void newLeft () {
 	pros::delay(4000);
 	lift_motor = 0;
 
-
-
-	/* 2nd step
-	pros::delay(500);
-	lift_motor = -127;
-	full(true);
-	pros::delay(step_2_back);
-	stop();
-	rotateOnPoint();
-	pros::delay(step_2_rotate);
-	stop();
-	pros::delay((step_2_lift - step_2_back) - step_2_rotate);
-	lift_motor = 0; */
-
-
-
-	/* New 3rd step
-	front_right = 100;
-	front_left = 100;
-	back_right = 100;
-	back_left = 100;
-	pros::delay(step_3_Foward);
-	front_right = -50;
-	front_left = -50;
-	back_right = -50;
-	back_left = -50;
-	*/
-
-
-
-	/* 3rd step *old*
-	lift_motor = 127;
-	pros::delay(step_3_lift_down - step_3_back);
-	full();
-	pros::delay(step_3_back);
-	stop();
-	lift_motor = 0; */
-
-
-	/* 4th step *old*
-	full(true);
-	pros::delay(step_4_foward);
-	stop();
-
-	rotateOnPoint();
-	pros::delay(step_4_rotate);
-	stop(); */
-
-
 }
-
 
 /**
  * A callback function for LLEMU's center button.
@@ -375,6 +308,7 @@ void autonomous() {
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
+
 void opcontrol() {
 while (true) {
 int left_y = master.get_analog(ANALOG_LEFT_Y);
@@ -451,26 +385,8 @@ pros::lcd::print(4, "%d    %d", left_front_output, right_front_output);
 pros::lcd::print(5, "%d    %d", left_back_output, right_back_output);
 
 pros::lcd::print(6, "%d", motor_position);
-/* pros::lcd::print(6, "Limit swith value: %d", limit_switch1.get_value()); */
 
-/*
-	if (limit_switch1.get_value() >= 15) {
-		if (right_front_bumper) {
-			lift_motor = 127;
-		} else if (right_back_bumper) {
-			lift_motor = -127;
-		} else {
-			lift_motor = 0;
-			}
-	} else {
-		if (right_front_bumper) {
-			lift_motor = 127;
-		} else {
-			lift_motor = 0;
-			}
-	}
 
-*/
 	if (right_front_bumper) {
 		lift_motor = 127;
 	} else if (right_back_bumper) {
