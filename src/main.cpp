@@ -142,15 +142,17 @@ void RedLeft() {
 		}
 
 
-
-		front_right = right_front_output;
-		front_left = left_front_output;
-
-		back_right = right_back_output;
-		back_left = left_back_output;
+		//define motor speed
+		front_right.move_velocity(right_front_output);
+		front_left.move_velocity(left_front_output);
+		back_right.move_velocity(right_back_output);
+		back_left.move_velocity(left_back_output);
 
 		pros::delay(20);
 		}
+	// TODO: Use PID controllers for moving during auton and not as a stop, due to inertia
+	//(it keeps on rolling after motors stop)
+
 	for (int i=0;i<=1;i++) {
 		right_front_output = 127;
 		left_front_output = 127;
@@ -274,7 +276,7 @@ void initialize() {
 
 	pros::lcd::register_btn1_cb(on_center_button);
 
-/*vision sensor stuff */
+//vision sensor stuff
 	front_vision_sensor.set_signature(ring_signature.id, &ring_signature);
 	front_vision_sensor.set_signature(red_mogus_signature.id, &red_mogus_signature);
 	front_vision_sensor.set_signature(blue_mogus_signature.id, &blue_mogus_signature);
@@ -296,7 +298,7 @@ void autonomous() {
 }
 
 /**
- * Runs the operato control code. This function will be started in its own task
+ * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
  * the Field Management System or the VEX Competition Switch in the operator
  * control mode.
@@ -309,6 +311,7 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 
+// TODO: take varun's foot control off right stick and put it on left bumpers : switch front and back of bot :
 void opcontrol() {
 while (true) {
 int left_y = master.get_analog(ANALOG_LEFT_Y);
@@ -402,7 +405,7 @@ pros::lcd::print(6, "%d", motor_position);
 	}
 
 
-/*assign motor velocity*/
+//assign motor velocity
 front_left.move_velocity(left_front_output);
 front_right.move_velocity(right_front_output);
 back_left.move_velocity(left_back_output);
