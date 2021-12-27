@@ -486,7 +486,11 @@ pros::lcd::print(6, "%d", motor_position);
 	}
 
 
-
+/*assign motor velocity*/
+front_left.move_velocity(left_front_output);
+front_right.move_velocity(right_front_output);
+back_left.move_velocity(left_back_output);
+back_right.move_velocity(right_back_output);
 
 pros::delay(20);
 
