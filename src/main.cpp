@@ -3,8 +3,8 @@
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 
 //vision sensor stuff
-pros::Vision front_vision_sensor(16);
-pros::Vision back_vision_sensor(15);
+pros::Vision front_vision_sensor(1);
+pros::Vision back_vision_sensor(10);
 
 pros::vision_signature_s_t ring_signature =
 front_vision_sensor.signature_from_utility(1, -205, 863, 329, 7521, 8655, 8088, 3.000, 0);
@@ -13,20 +13,38 @@ front_vision_sensor.signature_from_utility(2, 5105, 6761, 5933, 699, 1629, 1164,
 pros::vision_signature_s_t blue_mogus_signature =
 front_vision_sensor.signature_from_utility(3, -3049, -2407, -2728, 9121, 10519, 9820, 3.000, 0);
 pros::vision_signature_s_t nuetral_mogus_signature =
-front_vision_sensor.signature_from_utility(1, 1455, 1783, 1619, -3579, -3329, -3454, 3.000, 0);
+front_vision_sensor.signature_from_utility(1, 2427, 3407, 2917, -3847, -3463, -3655, 3.000, 0);
+
+//Pnuematic
+ pros::ADIDigitalOut claw (8, 0);
+
 
 
 //define motors
-pros::Motor front_left (8, MOTOR_GEARSET_18);
-pros::Motor front_right (9, MOTOR_GEARSET_18, true);
+pros::Motor front_left (20, MOTOR_GEARSET_18);
+pros::Motor front_right (18, MOTOR_GEARSET_18, true);
 
-pros::Motor back_left (18, MOTOR_GEARSET_18);
-pros::Motor back_right (20, MOTOR_GEARSET_18, true);
+pros::Motor back_left (9, MOTOR_GEARSET_18);
+pros::Motor back_right (8, MOTOR_GEARSET_18, true);
 
 pros::Motor lift_motor (19, MOTOR_GEARSET_36);
 pros::Motor varuns_foot (10, MOTOR_GEARSET_36);
 
-pros::Motor ring_bow (15, MOTOR_GEARSET_36);
+pros::Motor forebar_right (16, MOTOR_GEARSET_18);
+pros::Motor forebar_left (17, MOTOR_GEARSET_18);
+
+
+
+
+void moveRight(int speed) {
+	front_right = speed;
+	back_right = speed;
+}
+
+void moveLeft (int speed) {
+	front_left = speed;
+	back_right = speed;
+}
 
 // TODO: fix all this weird auton code CALVIN!!!!!!
 // TODO: Use PID controller for autonomous
@@ -86,138 +104,46 @@ void stop () {
 
 // TODO: Remove this if never used
 void RedLeft() {
-	while (true) {
+	int target_area = 1000;
+	pros::lcd::initialize();
+	front_vision_sensor.set_exposure(10);
+
+	while(true) {
 		front_vision_sensor.read_by_sig(0, nuetral_mogus_signature.id, 2, nutral_mogii);
 		int n_mogus_area1 = nutral_mogii[0].height * nutral_mogii[0].width;
 
-		pros::lcd::print(0, "objet count: %d", front_vision_sensor.get_object_count());
+		pros::lcd::print(0, "object count: %d", front_vision_sensor.get_object_count());
 		pros::lcd::print(1, "mogus objct 0: (%u, %u, %d)", nutral_mogii[0].x_middle_coord, nutral_mogii[0].y_middle_coord);
 		pros::lcd::print(2, "mogus object 1: (%u, %u)", nutral_mogii[1].x_middle_coord, nutral_mogii[1].y_middle_coord);
 		pros::lcd::print(3, "Area: %u", n_mogus_area1);
 
-		if (n_mogus_area1 > 100 || n_mogus_area1 < 1000 ) {
-			if (190 < nutral_mogii[0].x_middle_coord && nutral_mogii[0].x_middle_coord < 150) {
-				right_front_output = 127;
-				left_front_output = 127;
-				right_back_output = 127;
-				left_back_output = 127;
-				pros::lcd::print(6, "foward");
-			} else if (nutral_mogii[0].x_middle_coord > 140) {
-				right_front_output = 70;
-				left_front_output = 127;
-				right_back_output = 70;
-				left_back_output = 127;
-				pros::lcd::print(6, "left");
+		while ((n_mogus_area1 < target_area) && (n_mogus_area1 > 250)) {
+			front_vision_sensor.read_by_sig(0, nuetral_mogus_signature.id, 2, nutral_mogii);
+			int n_mogus_area1 = nutral_mogii[0].height * nutral_mogii[0].width;
+
+			pros::lcd::print(0, "object count: %d", front_vision_sensor.get_object_count());
+			pros::lcd::print(1, "mogus objct 0: (%u, %u, %d)", nutral_mogii[0].x_middle_coord, nutral_mogii[0].y_middle_coord);
+			pros::lcd::print(2, "mogus object 1: (%u, %u)", nutral_mogii[1].x_middle_coord, nutral_mogii[1].y_middle_coord);
+			pros::lcd::print(3, "Area: %u", n_mogus_area1);
+
+			if (nutral_mogii[0].x_middle_coord < 300) {
+				moveRight(-50);
+				moveLeft(-50+(50/300)*nutral_mogii[0].x_middle_coord);
+			} else if ((nutral_mogii[0].x_middle_coord > 340)) {
+				moveRight(-50+(50/300)*nutral_mogii[0].x_middle_coord);
+				moveLeft(-50);
 			} else {
-				right_front_output = 127;
-				left_front_output = 70;
-				right_back_output = 127;
-				left_back_output = 70;
-				pros::lcd::print(6, "right");
+				moveRight(50);
+				moveLeft(50);
 			}
-
-		} else if (n_mogus_area1 <= 100) {
-			right_front_output = 25;
-			left_front_output = 25;
-			right_back_output = 25;
-			left_back_output = 25;
-			pros::lcd::print(6, "searching");
-		} else {
-			right_front_output = 0;
-			left_front_output = 0;
-			right_back_output = 0;
-			left_back_output = 0;
-			pros::lcd::print(6, "stop");
-			pros::delay(1000);
-			break;
-
+			pros::delay(20);
 		}
-
-		if (front_right.get_position() > 300) {
-			right_front_output = 0;
-			left_front_output = 0;
-			right_back_output = 0;
-			left_back_output = 0;
-			break;
-		}
-
-
-		//define motor speed
-		front_right.move_velocity(right_front_output);
-		front_left.move_velocity(left_front_output);
-		back_right.move_velocity(right_back_output);
-		back_left.move_velocity(left_back_output);
-
+		stop();
 		pros::delay(20);
-		}
-	// TODO: Use PID controllers for moving during auton and not as a stop, due to inertia
-	//(it keeps on rolling after motors stop)
-
-	for (int i=0;i<=1;i++) {
-		right_front_output = 127;
-		left_front_output = 127;
-		right_back_output = 127;
-		left_back_output = 127;
-		pros::lcd::print(6, "grabbing goal");
-		if (front_right.get_position() > 400) {
-			right_front_output = 0;
-			left_front_output = 0;
-			right_back_output = 0;
-			left_back_output = 0;
-			break;
-		}
-		pros::delay(20);
-		}
-	for (int i=0;i<=3;i++) {
-		right_front_output = -127;
-		left_front_output = -127;
-		right_back_output = -127;
-		left_back_output = -127;
-		pros::delay(20);
-		}
-
-		right_front_output = 0;
-		left_front_output = 0;
-		right_back_output = 0;
-		left_back_output = 0;
-
-	}
-
-// TODO: Remove if never used
-void RedRightStart() {
-	int Position_lift = 0;
-
-
-	front_right = 75;
-	front_left = 75;
-	back_right = 75;
-	back_left = 75;
-
-	lift_motor = 127;
-	pros::delay(2500);
-
-	front_right = 0;
-	front_left = 0;
-	back_right = 0;
-	back_left = 0;
-
-	pros::delay(2500);
-
-	lift_motor = 0;
-
-	front_right = -100;
-	front_left = -100;
-	back_right = -100;
-	back_left = -100;
-
-	pros::delay(3000);
-
-	front_right = 0;
-	front_left = 0;
-	back_right = 0;
-	back_left = 0;
 
 }
+}
+
 
 // TODO: Remove if never used
 void newLeft () {
@@ -289,12 +215,14 @@ void initialize() {
 
 	varuns_foot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	lift_motor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+
+
 }
 void disabled() {}
 void competition_initialize() {}
 void autonomous() {
 	pros::lcd::initialize();
-	newLeft();
+	RedLeft();
 }
 
 /**
@@ -311,14 +239,41 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 
-// TODO: take varun's foot control off right stick and put it on left bumpers : switch front and back of bot :
+
 void opcontrol() {
+	int left_y_out = 0;
+	int right_y_out = 0;
+
+	int left_x_out = 0;
+	int right_x_out = 0;
+
+	int differnce = 10;
 while (true) {
 int left_y = master.get_analog(ANALOG_LEFT_Y);
 int right_y = master.get_analog(ANALOG_RIGHT_Y);
 
 int left_x = master.get_analog(ANALOG_LEFT_X);
 int right_x = master.get_analog(ANALOG_RIGHT_X);
+
+
+
+if (left_y > left_y_out) {
+	left_y_out += differnce;
+}
+
+if (left_y < left_y_out) {
+	left_y_out -= differnce;
+}
+
+if (left_x > left_x_out) {
+	left_x_out += differnce;
+}
+
+if (left_x < left_x_out) {
+	left_x_out -= differnce;
+}
+
+
 
 int right_front_output = 0;
 int left_front_output = 0;
@@ -335,11 +290,11 @@ bool left_back_bumper = master.get_digital(DIGITAL_L2);
 
 
 /* Drive Creation */
-right_front_output = left_y + left_x;
-left_front_output = left_y - left_x;
+right_front_output = left_y_out + left_x_out;
+left_front_output = left_y_out - left_x_out;
 
-right_back_output = left_y - left_x;
-left_back_output = left_y + left_x;
+right_back_output = left_y_out - left_x_out;
+left_back_output = left_y_out + left_x_out;
 
 /*hey calvin! you could condense this into an if then else staement*/
 /*and achieve the exact same result!*/
@@ -352,13 +307,25 @@ if (abs(right_x) > 5) {
 	left_back_output += right_x;
 }
 
-if (master.get_digital(DIGITAL_RIGHT)) {
-	right_front_output = -75;
-	left_front_output = 75;
-
-	right_back_output = 75;
-	left_back_output = -75;
+/*
+if (right_front_output > 5) {
+	right_front_output -= 5;
 }
+
+if (right_front_output < -5) {
+	right_front_output += 5;
+}
+
+
+if (left_front_output > 5) {
+	left_front_output -= 5;
+}
+
+if (left_front_output < -5) {
+	left_front_output += 5;
+}
+
+*/
 
 if (master.get_digital(DIGITAL_RIGHT)) {
 	right_front_output = 75;
@@ -381,7 +348,7 @@ if (master.get_digital(DIGITAL_LEFT)) {
 int motor_position = lift_motor.get_position();
 
 
-pros::lcd::print(1, "Left Y: %d  Let X: %d", left_y, left_x);
+pros::lcd::print(1, "Left Y: %d  Left X: %d", left_y, left_x);
 pros::lcd::print(2, "Right Y: %d  Right X: %d", right_y, right_x);
 
 pros::lcd::print(4, "%d    %d", left_front_output, right_front_output);
@@ -398,18 +365,24 @@ pros::lcd::print(6, "%d", motor_position);
 		lift_motor = 0;
 		}
 
-	if (abs(right_y) <= 5) {
-		varuns_foot.move_velocity(0);
-	} else {
-		varuns_foot = -right_y;
+	if (left_front_bumper) {
+		claw.set_value(1);
+	}
+
+	if (left_back_bumper) {
+		claw.set_value(1);
 	}
 
 
 //assign motor velocity
-front_left.move_velocity(left_front_output);
-front_right.move_velocity(right_front_output);
-back_left.move_velocity(left_back_output);
-back_right.move_velocity(right_back_output);
+front_left.move_velocity(left_front_output*2);
+front_right.move_velocity(right_front_output*2);
+back_left.move_velocity(left_back_output*2);
+back_right.move_velocity(right_back_output*2);
+
+forebar_right = right_y;
+forebar_left = right_y;
+
 
 pros::delay(20);
 
