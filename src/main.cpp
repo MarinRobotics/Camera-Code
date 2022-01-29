@@ -3,7 +3,7 @@
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 
 //vision sensor stuff
-pros::Vision front_vision_sensor(1);
+pros::Vision front_vision_sensor(6);
 pros::Vision back_vision_sensor(10);
 
 pros::vision_signature_s_t ring_signature =
@@ -16,7 +16,7 @@ pros::vision_signature_s_t nuetral_mogus_signature =
 front_vision_sensor.signature_from_utility(1, 2427, 3407, 2917, -3847, -3463, -3655, 3.000, 0);
 
 //Pnuematic
- pros::ADIDigitalOut claw (8, 0);
+ pros::ADIDigitalOut claw (1, 0);
 
 
 
@@ -25,13 +25,13 @@ pros::Motor front_left (20, MOTOR_GEARSET_18);
 pros::Motor front_right (18, MOTOR_GEARSET_18, true);
 
 pros::Motor back_left (9, MOTOR_GEARSET_18);
-pros::Motor back_right (8, MOTOR_GEARSET_18, true);
+pros::Motor back_right (1, MOTOR_GEARSET_18, true);
 
-pros::Motor lift_motor (19, MOTOR_GEARSET_36);
-pros::Motor varuns_foot (10, MOTOR_GEARSET_36);
+pros::Motor lift_motor (13, MOTOR_GEARSET_36);
 
-pros::Motor forebar_right (16, MOTOR_GEARSET_18);
-pros::Motor forebar_left (17, MOTOR_GEARSET_18);
+pros::Motor forebar_right (7, MOTOR_GEARSET_18);
+pros::Motor forebar_left (10, MOTOR_GEARSET_18,true);
+
 
 
 
@@ -142,8 +142,36 @@ void RedLeft() {
 		pros::delay(20);
 
 }
-}
 
+}
+ void vision_test () {
+
+	pros::lcd::initialize();
+	while (true) {
+	pros::lcd::clear();
+	front_vision_sensor.read_by_sig(0, nuetral_mogus_signature.id, 2, nutral_mogii);
+	pros::screen::print(TEXT_MEDIUM, 3, "mogus objct 0: (%u, %u, %d)", nutral_mogii[0].x_middle_coord, nutral_mogii[0].y_middle_coord);
+	pros::screen::print(TEXT_MEDIUM, 4, "mogus object 1: (%u, %u)", nutral_mogii[1].x_middle_coord, nutral_mogii[1].y_middle_coord);
+	pros::screen::print(TEXT_MEDIUM, 5, "object count: %d", front_vision_sensor.get_object_count());
+
+	pros::screen::set_pen(COLOR_YELLOW);
+	int x_0 = round((nutral_mogii[0].x_middle_coord - (nutral_mogii[0].width*0.5)) * (480/640));
+	int y_0 = round(200 - (nutral_mogii[0].top_coord * 0.5));
+	pros::screen::print(TEXT_MEDIUM, 6, "top right coord: (%d, %d)", x_0,y_0);
+
+
+	int x_1 = round((nutral_mogii[0].x_middle_coord - (nutral_mogii[0].width*0.5)) + nutral_mogii[0].width) * (240/640);
+	int y_1 = round(200 - ((nutral_mogii[0].top_coord + nutral_mogii[0].height) * 0.5));
+	pros::screen::print(TEXT_MEDIUM, 7, "bottom left coord: (%d, %d)", x_1, y_1);
+
+	pros::screen::print(TEXT_MEDIUM, 7,"x middle coord %d", nutral_mogii[0].x_middle_coord);
+
+
+	pros::screen::fill_rect(1, y_0, 100, y_1);
+	pros::delay(20);
+	}
+
+ }
 
 // TODO: Remove if never used
 void newLeft () {
@@ -159,9 +187,7 @@ void newLeft () {
 	int step_3_backward = 0;
 
 
-	varuns_foot = 127;
-	pros::delay(300);
-	varuns_foot = 0;
+
 
 	/* 1st step */
 	lift_motor = 127;
@@ -213,16 +239,18 @@ void initialize() {
 	back_vision_sensor.set_signature(blue_mogus_signature.id, &blue_mogus_signature);
 	back_vision_sensor.set_signature(nuetral_mogus_signature.id, &nuetral_mogus_signature);
 
-	varuns_foot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	lift_motor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	forebar_left.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	forebar_right.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 
 }
 void disabled() {}
 void competition_initialize() {}
 void autonomous() {
-	pros::lcd::initialize();
-	RedLeft();
+	vision_test();
+	/*RedLeft(); */
+
 }
 
 /**
@@ -286,6 +314,9 @@ bool right_back_bumper = master.get_digital(DIGITAL_R2);
 
 bool left_front_bumper = master.get_digital(DIGITAL_L1);
 bool left_back_bumper = master.get_digital(DIGITAL_L2);
+
+bool a_button = master.get_digital(DIGITAL_A);
+bool b_button = master.get_digital(DIGITAL_B);
 
 
 
@@ -366,11 +397,22 @@ pros::lcd::print(6, "%d", motor_position);
 		}
 
 	if (left_front_bumper) {
+		forebar_left = 127;
+		forebar_right = 127;
+	} else if (left_back_bumper) {
+		forebar_left = -127;
+		forebar_right = -127;
+	} else {
+		forebar_left = 0;
+		forebar_right = 0;
+	}
+
+	if (a_button) {
 		claw.set_value(1);
 	}
 
-	if (left_back_bumper) {
-		claw.set_value(1);
+	if (b_button) {
+		claw.set_value(0);
 	}
 
 
@@ -380,8 +422,7 @@ front_right.move_velocity(right_front_output*2);
 back_left.move_velocity(left_back_output*2);
 back_right.move_velocity(right_back_output*2);
 
-forebar_right = right_y;
-forebar_left = right_y;
+
 
 
 pros::delay(20);
